@@ -4,7 +4,7 @@ import Login from "../pages/Login";
 let router = createBrowserRouter([
   {
     path: "/login",
-    Component: <Login />
+    element: <Login />
   },
 ]);
 
