@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link } from "react-router";
+import { Link, useNavigate } from "react-router";
 import {
   ChartNoAxesColumnIncreasing,
   ShoppingBag,
@@ -11,6 +11,8 @@ import {
 
 function Header() {
   const [menuAberto, setMenuAberto] = useState(false);
+
+  const navigate = useNavigate();
 
   const itensMenu = [
     { nome: "Dashboard", icone: ChartNoAxesColumnIncreasing, link: "/" },
@@ -48,6 +50,10 @@ function Header() {
 
         {/* Sair: aparece em todos os tamanhos */}
         <button
+          onClick={() => {
+            localStorage.removeItem('token');
+            navigate('/login');
+          }}
           type="button"
           title="Sair"
           className="rounded-xl cursor-pointer bg-[#E47798] p-2.5 text-white transition hover:brightness-90 active:scale-90 md:rounded-[20px] md:p-4"
