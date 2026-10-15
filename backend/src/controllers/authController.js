@@ -1,7 +1,7 @@
 import jwt from 'jsonwebtoken'
 import dotenv from 'dotenv'
 import bcrypt from 'bcrypt'
-import { Usuarios } from '../models/Usuarios.js'
+import Usuarios from '../models/Usuarios.js'
 
 dotenv.config()
 
@@ -19,7 +19,7 @@ export async function Login(req, res) {
             return res.status(401).json({ message: "Usuário ou senha inválidos." })
         }
 
-        const senhaCorreta = await bcrypt.compare(senha, user.senha)
+        const senhaCorreta = await bcrypt.compare(senha, usuario.senha)
 
         if (!senhaCorreta) {
             return res.status(401).json({ message: "Usuário ou senha inválidos." })
