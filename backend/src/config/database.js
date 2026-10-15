@@ -12,4 +12,4 @@ const database = new Sequelize(
     }
 )
 
-export default database
+export default database;
