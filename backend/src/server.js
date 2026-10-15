@@ -1,8 +1,13 @@
 import express from 'express';
 import database  from './config/database';
 
+//Importando rotas
+import authRoutes from './routes/authRoutes.js'
+
 const app = express();
 const PORT = 3000;
+
+app.use("/login", authRoutes);
 
 async function startServer() { //Função para iniciar o server
     try {
