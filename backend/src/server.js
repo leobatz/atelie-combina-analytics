@@ -1,24 +1,12 @@
-import express from 'express';
-import cors from 'cors';
+import app from './app.js';
 
 //Importando banco de dados
 import database  from './config/database.js';
 
-//Importando rotas
-import authRoutes from './routes/authRoutes.js'
+// Registra os models e relacionamentos antes da sincronização.
+import './models/relacionamentos.js';
 
-const app = express();
-const PORT = 3000;
-
-//middlewares
-app.use(cors({
-  origin: 'http://localhost:5173',
-}));
-
-app.use(express.json());
-
-//Rotas
-app.use("/login", authRoutes);
+const PORT = process.env.PORT || 3000;
 
 async function startServer() { //Função para iniciar o server
     try {
