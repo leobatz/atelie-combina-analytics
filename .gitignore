@@ -23,3 +23,6 @@ Thumbs.db
 # IDE
 .vscode/
 .idea/
+
+# Outros
+PRD.md
