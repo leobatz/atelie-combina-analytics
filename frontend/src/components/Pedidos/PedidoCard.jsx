@@ -37,10 +37,12 @@ export default function PedidoCard({ pedido, onDetalhes, onCancelar }) {
 
       <div className="mt-4 space-y-2 text-xs text-[#512337]">
         {pedido.itens.map((item) => (
-          <div key={item.id} className="grid grid-cols-[minmax(0,1fr)_auto_auto] gap-x-3">
-            <span className="break-words uppercase">{item.nome}</span>
-            <span className="whitespace-nowrap">{item.quantidade} UN</span>
-            <span className="whitespace-nowrap">{formatarMoeda(item.precoUnitario)}</span>
+          <div key={item.id} className="flex flex-wrap items-baseline gap-x-6 gap-y-1">
+            <span className="min-w-0 break-words uppercase">{item.nome}</span>
+            <span className="inline-flex shrink-0 items-baseline gap-3 whitespace-nowrap">
+              <span>{item.quantidade} UN</span>
+              <span>{formatarMoeda(item.precoUnitario)}</span>
+            </span>
           </div>
         ))}
       </div>

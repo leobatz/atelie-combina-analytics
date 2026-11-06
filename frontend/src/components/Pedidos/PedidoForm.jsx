@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
+import { Link } from 'react-router';
 import { Loader2, Plus, Trash2 } from 'lucide-react';
-import { criarPedido } from '../../services/pedidosApi.js';
+import { criarPedido, editarPedido } from '../../services/pedidosApi.js';
 import { listarClientes } from '../../services/clientesApi.js';
 import { formatarMoeda, mensagemErro } from '../../utils/pedidos.js';
 import Modal from '../Modal.jsx';
@@ -8,24 +9,26 @@ import Modal from '../Modal.jsx';
 const campo = 'mt-1 w-full min-w-0 rounded-lg border border-pink-200 bg-white p-2.5 font-normal focus:outline-2 focus:outline-[#A75870]';
 const itemVazio = (chave) => ({ chave, nome: '', quantidade: '1', precoUnitario: '' });
 
-export default function PedidoForm({ onFechar, onSalvo }) {
+export default function PedidoForm({ pedido, onFechar, onSalvo }) {
   const [clientes, setClientes] = useState([]);
   const [carregandoClientes, setCarregandoClientes] = useState(true);
   const [erroClientes, setErroClientes] = useState('');
-  const [clienteId, setClienteId] = useState('');
-  const [nome, setNome] = useState('');
-  const [telefone, setTelefone] = useState('');
-  const [dataEntrega, setDataEntrega] = useState('');
-  const [observacoes, setObservacoes] = useState('');
-  const [itens, setItens] = useState([itemVazio(1)]);
+  const [clienteId, setClienteId] = useState(pedido ? String(pedido.clienteId) : '');
+  const [dataEntrega, setDataEntrega] = useState(pedido?.dataEntrega || '');
+  const [observacoes, setObservacoes] = useState(pedido?.observacoes || '');
+  const [itens, setItens] = useState(() => pedido?.itens?.length
+    ? pedido.itens.map((item, indice) => ({ chave: indice + 1, nome: item.nome, quantidade: String(item.quantidade), precoUnitario: String(item.precoUnitario) }))
+    : [itemVazio(1)]);
   const [salvando, setSalvando] = useState(false);
   const [erro, setErro] = useState('');
-  const proximaChave = useRef(2);
+  const proximaChave = useRef((pedido?.itens?.length || 1) + 1);
 
   useEffect(() => {
     const controller = new AbortController();
     listarClientes(controller.signal)
-      .then(setClientes)
+      .then((dados) => {
+        if (!controller.signal.aborted) setClientes(dados);
+      })
       .catch((error) => {
         if (!controller.signal.aborted) setErroClientes(mensagemErro(error, 'Não foi possível carregar os clientes. Feche e abra o formulário para tentar novamente.'));
       })
@@ -47,16 +50,21 @@ export default function PedidoForm({ onFechar, onSalvo }) {
   async function salvar(event) {
     event.preventDefault();
     if (salvando) return;
+    if (!clienteId) {
+      setErro('Selecione um cliente para o pedido.');
+      return;
+    }
     setSalvando(true);
     setErro('');
     try {
-      const pedido = await criarPedido({
-        ...(clienteId ? { clienteId: Number(clienteId) } : { cliente: { nome, telefone } }),
+      const dados = {
+        clienteId: Number(clienteId),
         dataEntrega,
         observacoes,
         itens: itens.map(({ nome, quantidade, precoUnitario }) => ({ nome, quantidade: Number(quantidade), precoUnitario })),
-      });
-      onSalvo(pedido);
+      };
+      const salvo = pedido ? await editarPedido(pedido.id, dados) : await criarPedido(dados);
+      onSalvo(salvo);
     } catch (error) {
       setErro(mensagemErro(error, 'Não foi possível salvar o pedido. Tente novamente.'));
     } finally {
@@ -71,13 +79,13 @@ export default function PedidoForm({ onFechar, onSalvo }) {
   }, 0);
 
   return (
-    <Modal titulo="Novo pedido" onFechar={onFechar} ocupado={salvando}>
+    <Modal titulo={pedido ? `Editar pedido #${pedido.id}` : 'Novo pedido'} onFechar={onFechar} ocupado={salvando}>
       <form onSubmit={salvar} className="space-y-4">
         <fieldset disabled={salvando} className="min-w-0 space-y-4 disabled:opacity-60">
           <label className="block text-sm">
             Cliente
-            <select value={clienteId} onChange={(event) => setClienteId(event.target.value)} disabled={carregandoClientes} className={campo}>
-              <option value="">{carregandoClientes ? 'Carregando clientes...' : 'Cadastrar novo cliente'}</option>
+            <select required value={clienteId} onChange={(event) => setClienteId(event.target.value)} disabled={carregandoClientes || Boolean(erroClientes)} className={campo}>
+              <option value="">{carregandoClientes ? 'Carregando clientes...' : 'Selecione um cliente'}</option>
               {clientes.map((cliente) => (
                 <option key={cliente.id} value={cliente.id}>{cliente.nome} — {cliente.telefone}</option>
               ))}
@@ -85,15 +93,8 @@ export default function PedidoForm({ onFechar, onSalvo }) {
           </label>
           {erroClientes && <p role="alert" className="text-sm text-red-700">{erroClientes}</p>}
 
-          {!clienteId && (
-            <div className="grid gap-3 sm:grid-cols-2">
-              <label className="min-w-0 text-sm">Nome do cliente
-                <input required maxLength={150} value={nome} onChange={(event) => setNome(event.target.value)} autoComplete="name" className={campo} />
-              </label>
-              <label className="min-w-0 text-sm">Telefone com DDD
-                <input required type="tel" maxLength={30} value={telefone} onChange={(event) => setTelefone(event.target.value)} autoComplete="tel" placeholder="(47) 91234-5678" className={campo} />
-              </label>
-            </div>
+          {!carregandoClientes && !erroClientes && clientes.length === 0 && (
+            <p className="text-sm font-normal text-[#754052]">Cadastre um cliente antes de criar o pedido. <Link to="/clientes" className="underline">Ir para Clientes</Link></p>
           )}
 
           <label className="block text-sm">Data de entrega
@@ -137,9 +138,9 @@ export default function PedidoForm({ onFechar, onSalvo }) {
         {erro && <p role="alert" className="text-sm text-red-700">{erro}</p>}
         <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
           <button type="button" disabled={salvando} onClick={onFechar} className="rounded-lg border border-pink-200 px-4 py-3 disabled:opacity-50">Voltar</button>
-          <button type="submit" disabled={salvando || carregandoClientes} className="flex items-center justify-center gap-2 rounded-lg bg-[#A75870] px-4 py-3 text-white disabled:opacity-50">
+          <button type="submit" disabled={salvando || carregandoClientes || Boolean(erroClientes) || clientes.length === 0} className="flex items-center justify-center gap-2 rounded-lg bg-[#A75870] px-4 py-3 text-white disabled:opacity-50">
             {salvando && <Loader2 className="size-4 animate-spin" />}
-            {salvando ? 'Salvando...' : 'Salvar pedido'}
+            {salvando ? 'Salvando...' : pedido ? 'Salvar alterações' : 'Salvar pedido'}
           </button>
         </div>
       </form>

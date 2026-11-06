@@ -1,13 +1,15 @@
 import { Link } from 'react-router';
 import { Circle, ShoppingBag } from 'lucide-react';
 import { diasParaEntrega } from '../../utils/dashboard.js';
+import { abasPedidos } from '../../utils/pedidos.js';
 
 export default function ListaPrazos({ titulo, pedidos, hoje, status }) {
   const atrasados = status === 'atrasado';
+  const borda = abasPedidos.find((aba) => aba.valor === status)?.borda || 'border-transparent';
   const ordenados = [...pedidos].sort((a, b) => a.dataEntrega.localeCompare(b.dataEntrega) || a.id - b.id);
 
   return (
-    <section className="flex h-full min-w-0 flex-col rounded-[24px] bg-[#EDBDCE] p-4 sm:p-5" aria-label={titulo}>
+    <section className={`flex h-full min-w-0 flex-col rounded-[24px] border-2 ${borda} bg-[#EDBDCE] p-4 sm:p-5`} aria-label={titulo}>
       <div className="mb-4 flex items-center justify-between gap-2">
         <h2 className="text-sm font-bold">{titulo}</h2>
         <span className="rounded-full bg-white/65 px-2 py-0.5 text-xs text-[#754052]">{pedidos.length}</span>

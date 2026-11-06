@@ -3,7 +3,6 @@ import cors from 'cors';
 import authRoutes from './routes/authRoutes.js';
 import clienteRoutes from './routes/clienteRoutes.js';
 import pedidoRoutes from './routes/pedidoRoutes.js';
-import tratarErro from './middlewares/tratarErro.js';
 
 const app = express();
 
@@ -13,6 +12,5 @@ app.use(express.json({ limit: '1mb' }));
 app.use('/login', authRoutes);
 app.use('/clientes', clienteRoutes);
 app.use('/pedidos', pedidoRoutes);
-app.use(tratarErro);
 
 export default app;

@@ -5,3 +5,11 @@
   font-family: 'Nunito', sans-serif;
   font-weight: bold;
 }
+
+button {
+  @apply cursor-pointer;
+}
+
+button:disabled {
+  @apply cursor-not-allowed;
+}

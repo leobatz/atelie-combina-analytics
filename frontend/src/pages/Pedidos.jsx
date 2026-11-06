@@ -5,7 +5,8 @@ import PedidoCard from "../components/Pedidos/PedidoCard.jsx";
 import PedidoForm from "../components/Pedidos/PedidoForm.jsx";
 import PedidoDetalhes from "../components/Pedidos/PedidoDetalhes.jsx";
 import CancelarPedido from "../components/Pedidos/CancelarPedido.jsx";
-import { listarPedidos } from "../services/pedidosApi.js";
+import ConfirmarExclusao from "../components/ConfirmarExclusao.jsx";
+import { deletarPedido, listarPedidos } from "../services/pedidosApi.js";
 import { abasPedidos, mensagemErro } from "../utils/pedidos.js";
 
 function Pedidos() {
@@ -26,7 +27,9 @@ function Pedidos() {
   useEffect(() => {
     const controller = new AbortController();
     listarPedidos(controller.signal)
-      .then(setPedidos)
+      .then((dados) => {
+        if (!controller.signal.aborted) setPedidos(dados);
+      })
       .catch((error) => {
         if (!controller.signal.aborted) setErro(mensagemErro(error, "Não foi possível carregar os pedidos. Verifique se o servidor está rodando."));
       })
@@ -64,6 +67,14 @@ function Pedidos() {
     setAviso("Pedido cancelado com sucesso.");
   }
 
+  async function excluirPedido() {
+    const id = modal.pedido.id;
+    await deletarPedido(id);
+    setPedidos((anteriores) => anteriores.filter((pedido) => pedido.id !== id));
+    setModal(null);
+    setAviso("Pedido e itens excluídos com sucesso.");
+  }
+
   const pedidosFiltrados = pedidos.filter((pedido) => pedido.status === abaAtiva);
 
   return (
@@ -91,9 +102,8 @@ function Pedidos() {
               onClick={() => setAbaAtiva(aba.valor)}
               className={[
                 "min-w-0 flex-1 border-b-[3px] px-2 py-3 text-xs font-semibold transition sm:text-sm",
-                abaAtiva === aba.valor
-                  ? "border-[#A38A00] text-[#806C00]"
-                  : "border-transparent text-black",
+                aba.cor,
+                abaAtiva === aba.valor ? aba.borda : "border-transparent",
               ].join(" ")}
             >
               {aba.nome}
@@ -134,11 +144,17 @@ function Pedidos() {
       </div>
 
       {modal?.tipo === "novo" && <PedidoForm onFechar={() => setModal(null)} onSalvo={pedidoSalvo} />}
+      {modal?.tipo === "editar" && <PedidoForm pedido={modal.pedido} onFechar={() => setModal(null)} onSalvo={pedidoSalvo} />}
       {modal?.tipo === "detalhes" && (
-        <PedidoDetalhes key={modal.pedido.id} pedidoId={modal.pedido.id} onFechar={() => setModal(null)} onAtualizado={pedidoSalvo} />
+        <PedidoDetalhes key={modal.pedido.id} pedidoId={modal.pedido.id} onFechar={() => setModal(null)} onAtualizado={pedidoSalvo} onEditar={(pedido) => abrirModal("editar", pedido)} onExcluir={(pedido) => abrirModal("excluir", pedido)} />
       )}
       {modal?.tipo === "cancelar" && (
         <CancelarPedido pedido={modal.pedido} onFechar={() => setModal(null)} onCancelado={pedidoCancelado} />
+      )}
+      {modal?.tipo === "excluir" && (
+        <ConfirmarExclusao titulo="Excluir pedido" onFechar={() => setModal(null)} onConfirmar={excluirPedido}>
+          Deseja excluir o pedido #{modal.pedido.id} de {modal.pedido.cliente.nome}? O pedido e todos os seus itens serão excluídos definitivamente. Para manter o histórico, use Cancelar.
+        </ConfirmarExclusao>
       )}
     </main>
   );

@@ -1,15 +1,20 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router';
 import { RefreshCw, UserRound } from 'lucide-react';
 import EstadoPagina from '../components/EstadoPagina.jsx';
 import GraficoBarras from '../components/Dashboard/GraficoBarras.jsx';
 import ListaPrazos from '../components/Dashboard/ListaPrazos.jsx';
-import useDadosComerciais from '../hooks/useDadosComerciais.js';
 import { hojeBrasil, resumoAnual } from '../utils/dashboard.js';
-import { formatarMoeda } from '../utils/pedidos.js';
+import { formatarMoeda, mensagemErro } from '../utils/pedidos.js';
+import { listarClientes } from '../services/clientesApi.js';
+import { listarPedidos } from '../services/pedidosApi.js';
 
 export default function Dashboard() {
-  const { clientes, pedidos, carregando, erro, recarregar } = useDadosComerciais();
+  const [clientes, setClientes] = useState([]);
+  const [pedidos, setPedidos] = useState([]);
+  const [carregando, setCarregando] = useState(true);
+  const [erro, setErro] = useState('');
+  const [atualizacao, setAtualizacao] = useState(0);
   const [hoje, setHoje] = useState(() => hojeBrasil());
   const anoAtual = Number(hoje.slice(0, 4));
   const [ano, setAno] = useState(anoAtual);
@@ -20,9 +25,28 @@ export default function Dashboard() {
   const faturamento = resumo.reduce((total, mes) => total + mes.faturamentoCentavos, 0);
   const concluidos = resumo.reduce((total, mes) => total + mes.concluidos, 0);
 
+  useEffect(() => {
+    const controller = new AbortController();
+    Promise.all([listarClientes(controller.signal), listarPedidos(controller.signal)])
+      .then(([clientesRecebidos, pedidosRecebidos]) => {
+        if (controller.signal.aborted) return;
+        setClientes(clientesRecebidos);
+        setPedidos(pedidosRecebidos);
+      })
+      .catch((error) => {
+        if (!controller.signal.aborted) setErro(mensagemErro(error, 'Não foi possível carregar o Dashboard. Verifique se o backend está rodando.'));
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setCarregando(false);
+      });
+    return () => controller.abort();
+  }, [atualizacao]);
+
   function atualizar() {
     setHoje(hojeBrasil());
-    recarregar();
+    setCarregando(true);
+    setErro('');
+    setAtualizacao((valor) => valor + 1);
   }
 
   return (
@@ -60,7 +84,7 @@ export default function Dashboard() {
 
             <div className="min-w-0 lg:col-start-1 lg:row-start-2"><ListaPrazos titulo="Pedidos atrasados" pedidos={atrasados} hoje={hoje} status="atrasado" /></div>
 
-            <section className="min-w-0 rounded-[24px] bg-[#EDBDCE] p-4 sm:p-5 lg:col-start-2 lg:row-start-2" aria-labelledby="titulo-concluidos">
+            <section className="min-w-0 rounded-[24px] border-2 border-green-500 bg-[#EDBDCE] p-4 sm:p-5 lg:col-start-2 lg:row-start-2" aria-labelledby="titulo-concluidos">
               <div className="mb-4 flex items-center justify-between gap-2"><h2 id="titulo-concluidos" className="text-sm">Pedidos concluídos</h2><span className="rounded-full bg-white/65 px-2 py-0.5 text-xs text-[#754052]">{concluidos}</span></div>
               <div className="max-h-52 overflow-y-auto pr-2">
                 <GraficoBarras compacto cor="bg-[#E47798]" dados={resumo.map((mes) => ({ mes: mes.mes, valor: mes.concluidos }))} formatarValor={(valor) => String(valor)} />

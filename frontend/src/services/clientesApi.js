@@ -6,7 +6,15 @@ export async function listarClientes(signal) {
 }
 
 export async function criarCliente(cliente) {
-  // A API atual persiste somente nome e telefone.
   const { data } = await api.post('/clientes', { nome: cliente.nome, telefone: cliente.telefone });
-  return data;
+  return data.cliente;
+}
+
+export async function editarCliente(id, cliente) {
+  const { data } = await api.patch(`/clientes/${id}`, { nome: cliente.nome, telefone: cliente.telefone });
+  return data.atualizandoCliente;
+}
+
+export async function deletarCliente(id) {
+  await api.delete(`/clientes/${id}`);
 }

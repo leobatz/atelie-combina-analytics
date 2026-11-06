@@ -15,6 +15,15 @@ export async function criarPedido(pedido) {
   return data;
 }
 
+export async function editarPedido(id, pedido) {
+  const { data } = await api.patch(`/pedidos/${id}`, pedido);
+  return data;
+}
+
+export async function deletarPedido(id) {
+  await api.delete(`/pedidos/${id}`);
+}
+
 export async function atualizarStatusPedido(id, status) {
   const { data } = await api.patch(`/pedidos/${id}/status`, { status });
   return data;

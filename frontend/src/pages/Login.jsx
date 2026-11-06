@@ -3,7 +3,8 @@ import { useNavigate } from "react-router";
 import { Loader2 } from "lucide-react";
 import { toast } from "react-toastify";
 import api from '../services/api.js'
-import Input from '../components/Login/Input';
+import Input from '../components/Login/Input.jsx';
+import { mensagemErro } from '../utils/pedidos.js';
 
 function Login() {
     const [username, setUsername] = useState('');
@@ -12,7 +13,9 @@ function Login() {
 
     const navigate = useNavigate();
 
-    async function handleLogin() {
+    async function handleLogin(event) {
+        event.preventDefault();
+        if (loading) return;
         if (!username || !senha) {
             return toast.warn("Preencha todos os campos!");
         };
@@ -27,10 +30,10 @@ function Login() {
             setUsername('');
             setSenha('');
 
-            navigate('/');
+            navigate('/', { replace: true });
         } catch (error) {
             console.error(error);
-            toast.error("Usuário ou senha inválidos. Tente novamente.");
+            toast.error(mensagemErro(error, 'Não foi possível conectar ao servidor. Verifique se o backend está rodando.'));
         } finally {
             setLoading(false); 
         }
@@ -38,7 +41,7 @@ function Login() {
 
     return (
         <main className="flex items-center justify-center h-screen bg-[#FDB4C8]">
-            <div className="flex flex-col p-10 pt-15 justify-center gap-5 items-center relative rounded-[40px] bg-[#fed9e3]">
+            <form onSubmit={handleLogin} className="relative mx-4 flex w-full max-w-sm flex-col items-center justify-center gap-5 rounded-[40px] bg-[#fed9e3] p-6 pt-15 sm:p-10 sm:pt-15">
                 <div className="absolute flex items-center justify-center top-0 -translate-y-1/2 rounded-full w-20 h-20 bg-[#A75870]">
                     <img className='w-10' src="/icons/perfil.svg" alt="" />
                 </div>
@@ -52,11 +55,21 @@ function Login() {
 
                 <div className='flex flex-col items-center justify-center gap-2'>
                     <Input 
+                        value={username}
+                        name="username"
+                        autoComplete="username"
+                        aria-label="Usuário"
+                        required
                         onChange={(e) => setUsername(e.target.value)} 
                         placeholder={'Usuário'} 
                         type={'text'}
                     />
                     <Input
+                        value={senha}
+                        name="senha"
+                        autoComplete="current-password"
+                        aria-label="Senha"
+                        required
                         onChange={(e) => setSenha(e.target.value)}
                         showPasswordToggle={true} 
                         placeholder={'Senha'} 
@@ -65,7 +78,7 @@ function Login() {
                 </div>
 
                 <button
-                    onClick={() => handleLogin()}
+                    type="submit"
                     disabled={loading}
                     className='bg-[#A75870] p-3 rounded-[12px] w-full flex items-center justify-center cursor-pointer text-white hover:brightness-90 transition-all active:scale-95'
                 >
@@ -75,7 +88,7 @@ function Login() {
                         "Entrar"
                     )}
                 </button>
-            </div>
+            </form>
         </main>
     );
 };
